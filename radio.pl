@@ -49,8 +49,11 @@ sub play_radio ($url) {
         return 0;
       },
     },
+    on_exception => sub {
+      warn "Failed to play radio $url";
+    },
     on_finish => sub {
-      say "finished";
+      say "finished playing $url";
     }
   );
   return $process;
@@ -75,7 +78,6 @@ my $kb_input = rx_from_event_array($keyboard, 'keyup')                 # on keyu
   op_map( sub { $typed .= $_->[0]; return { text => trim $typed } } ), # save any typed char, ignoring leading or ending whitespace
   op_filter( sub ($txt, $idx) { length($txt->{text}) > 0 } ),          # ignores text with less than 2 chars
   op_debounce_time(0.25),                                              # only after long pausing typing
-  op_distinct_until_key_changed( 'text' ),                             # pass a new value if after pause typing it changed
 );
 
 # the next station
