@@ -19,6 +19,7 @@ use Mojo::Collection qw(c);
 use IO::Async::Process;
 use DDP;
 
+binmode STDOUT, ":encoding(UTF-8)";
 my $loop = IO::Async::Loop->new;
 RxPerl::IOAsync::set_loop($loop);
 
@@ -44,7 +45,7 @@ sub play_radio ($url) {
       on_read => sub {
         my ( $stream, $buffref ) = @_;
         while( $$buffref =~ s/^(.*)\n// ) {
-          print "outputting... '$1'\n";
+          say "outputting... '$1'\n";
         }
         return 0;
       },
@@ -80,10 +81,15 @@ my $kb_input = rx_from_event_array($keyboard, 'keyup')                 # on keyu
   op_debounce_time(0.25),                                              # only after long pausing typing
 );
 
+my $index = 0;
 # the next station
 sub next_station {
-  state $index = -1;
   $index++;
+  return $stations->[$index % $stations->size];
+}
+
+sub previous_station {
+  $index--;
   return $stations->[$index % $stations->size];
 }
 
@@ -105,10 +111,33 @@ sub stop {
   $loop->stop;
 }
 
+sub help {
+  say <<~'EOH';
+  q - to quit
+  n - to next station
+  p - to previous station
+  h - to help
+  l - to list all stations
+  EOH
+}
+
+sub list_all {
+  $stations->each(
+    sub ($x, $idx){
+      say "$idx - $x->{station}{name}";
+    }
+  );
+  my $playing = $stations->first(sub{ $_->{station}{playing} });
+  say "current playing: $playing->{station}{name}" if $playing;
+}
+
 $kb_input->subscribe(
   {
     next => sub ($in) {
       play(next_station) if $in->{text} =~ /ne?x?t?/i;
+      play(previous_station) if $in->{text} =~/pr?e?v?/i;
+      help if $in->{text} =~ /he?l?p?/i;
+      list_all if $in->{text} =~ /li?s?t?/i;
       stop if $in->{text} =~ /qu?i?t?/i;
       $typed = '';
     },
