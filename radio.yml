@@ -1,0 +1,10 @@
+
+- station:
+    name: Classic Russian
+    url: https://icecast-radioclassica.cdnvideo.ru/sberzvuk
+- station:
+    name: Russian Music
+    url: http://radio.glafir.ru:7000/pop-rus
+- station:
+    name: Радио старого полковника
+    url: http://notthatoldcolonel.ru:1040/stream
