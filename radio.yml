@@ -8,3 +8,9 @@
 - station:
     name: Радио старого полковника
     url: http://notthatoldcolonel.ru:1040/stream
+- station:
+    name: Radio USP
+    url: https://flow.emm.usp.br:8007/radiousp-128.ogg
+- station:
+    name: Radio JaH
+    url: http://solid9.streamupsolutions.com:8018/autodj
