@@ -2,6 +2,25 @@ use Mojo::Base -strict, -signatures;
 
 package Keyboard {
   use Mojo::Base 'Mojo::EventEmitter', -strict, -signatures;
+  use Term::TermKey::Async qw( FORMAT_VIM KEYMOD_CTRL );
+  has loop => sub { die "Need IOAsync loop" };
+
+  sub new($class, @args) {
+    my $self = $class->SUPER::new(@args);
+    $self->setup;
+    return $self;
+  }
+
+  sub setup ($self) {
+    my $tka = Term::TermKey::Async->new(
+      term => \*STDIN,
+
+      on_key => sub ($tka, $key){
+        $self->pressed($tka->format_key($key, FORMAT_VIM));
+      },
+    );
+    $self->loop->add($tka);
+  }
 
   sub pressed($self, $key) {
     $self->emit( 'keyup' => $key );
@@ -10,7 +29,6 @@ package Keyboard {
 
 package main;
 use RxPerl::IOAsync ':all';
-use Term::TermKey::Async qw( FORMAT_VIM KEYMOD_CTRL );
 use Mojo::Util qw(trim);
 use IO::Async::Loop;
 use Mojo::File qw(path);
@@ -61,15 +79,8 @@ sub play_radio ($url) {
   return $process;
 }
 
-# create event source and attach to real source tka
-my $keyboard = Keyboard->new;
-my $tka = Term::TermKey::Async->new(
-  term => \*STDIN,
-
-  on_key => sub ($self, $key){
-    $keyboard->pressed($self->format_key($key, FORMAT_VIM));
-  },
-);
+# create keyboard event source
+my $keyboard = Keyboard->new(loop => $loop);
 
 # typed string
 my $typed = '';
@@ -177,6 +188,4 @@ $kb_input->subscribe(
     }
   }
 );
-
-$loop->add( $tka );
 $loop->run;
