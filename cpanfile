@@ -1,0 +1,11 @@
+requires 'DDP';
+requires 'IO::Async::Loop';
+requires 'IO::Async::Process';
+requires 'List::Util';
+requires 'Mojo::Base';
+requires 'Mojo::Collection';
+requires 'Mojo::File';
+requires 'Mojo::Util';
+requires 'RxPerl::IOAsync';
+requires 'Term::TermKey::Async';
+requires 'YAML';
