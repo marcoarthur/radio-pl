@@ -44,6 +44,7 @@ RxPerl::IOAsync::set_loop($loop);
 
 my $script = path($0);
 my $stations;
+my $index = 0;
 my $cmds;
 
 # get from yml radio data
@@ -99,7 +100,6 @@ my $kb_input = rx_from_event_array($keyboard, 'keyup')        # on keyup event
   op_debounce_time(0.25),                                     # only after long pausing typing
 );
 
-my $index = 0;
 # the next station
 sub next_station {
   $index++;
@@ -174,23 +174,22 @@ $cmds = {
   },
 };
 
+sub process_user_input($input) {
+  my $cmd = first { $cmds->{$_}{pattern} =~ $input->{text} } keys %$cmds;
+  if ( $cmd ) { $cmds->{$cmd}->{func}->(); }
+  else {
+    warn "Unrecognized command '$input->{text}'\n";
+    warn "Type 'h' for help\n";
+  }
+  $typed = '';
+}
+
 $kb_input->subscribe(
   {
-    next => sub ($in) {
-      my $cmd = first { $cmds->{$_}{pattern} =~ $in->{text} } keys %$cmds;
-      if ( $cmd ) { $cmds->{$cmd}->{func}->(); }
-      else {
-        warn "Unrecognized command '$in->{text}'\n";
-        warn "Type 'h' for help\n";
-      }
-      $typed = '';
-    },
-    error => sub {
-      ...
-    },
-    complete => sub {
-      say "Completed";
-    }
+    next => sub ($in) { process_user_input($in) },
+    error => sub { ... },
+    complete => sub { say "Completed" }
   }
 );
+
 $loop->run;
