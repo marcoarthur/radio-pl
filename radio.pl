@@ -75,11 +75,13 @@ my $tka = Term::TermKey::Async->new(
 my $typed = '';
 
 # Rx to get keyboard inputs
-my $kb_input = rx_from_event_array($keyboard, 'keyup')                 # on keyup event
+my $kb_input = rx_from_event_array($keyboard, 'keyup')        # on keyup event
 ->pipe(
-  op_map( sub { $typed .= $_->[0]; return { text => trim $typed } } ), # save any typed char, ignoring leading or ending whitespace
-  op_filter( sub ($txt, $idx) { length($txt->{text}) > 0 } ),          # ignores text with less than 2 chars
-  op_debounce_time(0.25),                                              # only after long pausing typing
+  op_map(                                                     
+    sub { $typed .= $_->[0]; return { text => trim $typed } } # save any typed char, ignoring leading or ending whitespace 
+  ),
+  op_filter( sub ($txt, $idx) { length($txt->{text}) > 0 } ), # ignores text with less than 2 chars
+  op_debounce_time(0.25),                                     # only after long pausing typing
 );
 
 my $index = 0;
