@@ -44,6 +44,7 @@ RxPerl::IOAsync::set_loop($loop);
 
 my $script = path($0);
 my $stations;
+my $cmds;
 
 # get from yml radio data
 eval {
@@ -55,7 +56,8 @@ eval {
 die "Cannot continue, error reading station data" if $@;
 die "No stations" if $stations->size == 0;
 
-sub play_radio ($url) {
+sub play_radio ($radio) {
+  my $url = $radio->{station}{url};
   my $cmd = ['mplayer', $url];
 
   my $process = IO::Async::Process->new(
@@ -74,8 +76,10 @@ sub play_radio ($url) {
     },
     on_finish => sub {
       say "finished playing $url";
+      $radio->{station}{playing} = 0;
     }
   );
+  $radio->{station}{playing} = 1;
   return $process;
 }
 
@@ -111,13 +115,14 @@ sub previous_station {
 sub play ($radio){
   # check running station and stop the radio first
   my $on_play = $stations->first( sub { $_->{station}{playing} } );
-  $on_play->{station}{playing} = 0 if $on_play;
-  $on_play->{station}{process}->kill(15) if $on_play;
+  if ($on_play) {
+    $on_play->{station}{process}->kill(15);
+    $on_play->{station}{playing} = 0;
+  }
 
   # start the new station
-  $radio->{station}{process} = play_radio( $radio->{station}{url} );
+  $radio->{station}{process} = play_radio( $radio );
   $loop->add($radio->{station}{process});
-  $radio->{station}{playing} = 1;
 }
 
 sub stop {
@@ -146,7 +151,7 @@ sub list_all {
 }
 
 # all command table
-my $cmds = {
+$cmds = {
   next => { 
     pattern => qr/^n$/i, 
     func => sub { play(next_station) } 
