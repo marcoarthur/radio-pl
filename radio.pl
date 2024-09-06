@@ -29,14 +29,12 @@ package Keyboard {
 
 package main;
 use RxPerl::IOAsync ':all';
-use Mojo::Util qw(trim);
 use IO::Async::Loop;
 use Mojo::File qw(path);
 use YAML qw(LoadFile);
 use Mojo::Collection qw(c);
 use IO::Async::Process;
 use List::Util qw(first);
-use DDP;
 
 binmode STDOUT, ":encoding(UTF-8)";
 my $loop = IO::Async::Loop->new;
@@ -87,17 +85,14 @@ sub play_radio ($radio) {
 # create keyboard event source
 my $keyboard = Keyboard->new(loop => $loop);
 
-# typed string
-my $typed = '';
-
 # Rx to get keyboard inputs
-my $kb_input = rx_from_event_array($keyboard, 'keyup')        # on keyup event
+my $kb_input = rx_from_event_array($keyboard, 'keyup')
 ->pipe(
-  op_map(                                                     
-    sub { $typed .= $_->[0]; return { text => trim $typed } } # save any typed char, ignoring leading or ending whitespace 
+  op_map(
+    sub ($typed, $idx){ return { text => $typed->[0] } }
   ),
-  op_filter( sub ($txt, $idx) { length($txt->{text}) > 0 } ), # ignores text with less than 2 chars
-  op_debounce_time(0.25),                                     # only after long pausing typing
+  op_filter( sub ($txt, $idx) { length($txt->{text}) > 0 } ),
+  op_debounce_time(0.25),
 );
 
 # the next station
@@ -181,7 +176,6 @@ sub process_user_input($input) {
     warn "Unrecognized command '$input->{text}'\n";
     warn "Type 'h' for help\n";
   }
-  $typed = '';
 }
 
 $kb_input->subscribe(
