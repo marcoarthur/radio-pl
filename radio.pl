@@ -91,8 +91,6 @@ my $kb_input = rx_from_event_array($keyboard, 'keyup')
   op_map(
     sub ($typed, $idx){ return { text => $typed->[0] } }
   ),
-  op_filter( sub ($txt, $idx) { length($txt->{text}) > 0 } ),
-  op_debounce_time(0.25),
 );
 
 # the next station
@@ -186,4 +184,5 @@ $kb_input->subscribe(
   }
 );
 
+help;
 $loop->run;
