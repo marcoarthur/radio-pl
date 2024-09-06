@@ -17,6 +17,7 @@ use Mojo::File qw(path);
 use YAML qw(LoadFile);
 use Mojo::Collection qw(c);
 use IO::Async::Process;
+use List::Util qw(first);
 use DDP;
 
 binmode STDOUT, ":encoding(UTF-8)";
@@ -131,14 +132,39 @@ sub list_all {
   say "current playing: $playing->{station}{name}" if $playing;
 }
 
+# all command table
+my $cmds = {
+  next => { 
+    pattern => qr/^n$/i, 
+    func => sub { play(next_station) } 
+  },
+  previous => { 
+    pattern => qr/^p$/i,
+    func => sub { play(previous_station) }
+  },
+  help => {
+    pattern =>qr/^h$/i,
+    func => sub { help }
+  },
+  list_all => {
+    pattern => qr/^l$/i,
+    func => sub {list_all}
+  },
+  stop => {
+    pattern => qr/^q$/i,
+    func => sub {stop}
+  },
+};
+
 $kb_input->subscribe(
   {
     next => sub ($in) {
-      play(next_station) if $in->{text} =~ /ne?x?t?/i;
-      play(previous_station) if $in->{text} =~/pr?e?v?/i;
-      help if $in->{text} =~ /he?l?p?/i;
-      list_all if $in->{text} =~ /li?s?t?/i;
-      stop if $in->{text} =~ /qu?i?t?/i;
+      my $cmd = first { $cmds->{$_}{pattern} =~ $in->{text} } keys %$cmds;
+      if ( $cmd ) { $cmds->{$cmd}->{func}->(); }
+      else {
+        warn "Unrecognized command '$in->{text}'\n";
+        warn "Type 'h' for help\n";
+      }
       $typed = '';
     },
     error => sub {
