@@ -17,7 +17,8 @@ EOS
 # on startup we send a help message
 subtest start_radio => sub {
   my ($in,$out,$err);
-  my $h = start [ 'perl', $script ], \$in, \$out, \$err, timeout(3);
+  my $h = start [ 'perl', $script ], \$in, \$out, \$err,
+                timeout(3, exception => 'slow radio start');
 
   # just quit radio
   $in = 'q'; $h->pump; $h->finish;
@@ -27,7 +28,8 @@ subtest start_radio => sub {
 
 sub send_radio_cmd($cmd, $out) {
   my ($in, $err, $i);
-  my $h = start [ 'perl', $script ], \$in, $out, \$err, timeout(3);
+  my $h = start [ 'perl', $script ], \$in, $out, \$err, 
+                timeout(3, exception => "slow radio command $cmd");
   do {
     $out = '';
     $in = $cmd;
