@@ -37,6 +37,7 @@ use YAML qw(LoadFile);
 use Mojo::Collection qw(c);
 use IO::Async::Process;
 use List::Util qw(first);
+use Getopt::Long;
 
 binmode STDOUT, ":encoding(UTF-8)";
 STDOUT->autoflush(1);
@@ -47,23 +48,27 @@ my $script = path($0);
 my $stations;
 my $index = 0;
 my $cmds;
-my $externals = {
-  player => 'mplayer',
-};
+my %globals;
 
-# get from yml radio data
-eval {
-  my $data = $script->to_array->[-1] =~ s/\.pl$/\.yml/r;
-  $stations = LoadFile($data);
-  $stations = c(@$stations);
-};
+my @opts = qw( player=s conf=s vebose );
 
-die "Cannot continue, error reading station data" if $@;
-die "No stations" if $stations->size == 0;
+sub setup {
+  GetOptions (\%globals, @opts) or die "Error parsing options";
+  $globals{player}  //= 'mplayer';
+  $globals{conf}    //= ($script->to_array->[-1] =~ s/\.pl$/\.yml/r);
+
+  # get from yml radio data
+  eval {
+    $stations = c(LoadFile($globals{conf})->@*);
+  };
+
+  die "Cannot continue, error reading station data" if $@;
+  die "No stations" if $stations->size == 0;
+}
 
 sub play_radio ($radio) {
   my $url = $radio->{station}{url};
-  my $cmd = [$externals->{player}, $url];
+  my $cmd = [$globals{player}, $url];
 
   my $process = IO::Async::Process->new(
     command => $cmd,
@@ -140,13 +145,11 @@ sub help {
 }
 
 sub list_all {
-  $stations->each(
-    sub ($x, $idx){
-      say "$idx - $x->{station}{name}";
-    }
-  );
+  my $list = '';
+  $stations->each(sub ($x, $idx){ $list .= "$idx - $x->{station}{name}\n" });
   my $playing = $stations->first(sub{ $_->{station}{playing} });
-  say "current playing: $playing->{station}{name}" if $playing;
+  $list .= "current playing: $playing->{station}{name}\n" if $playing;
+  say $list;
 }
 
 # all command table
@@ -190,5 +193,6 @@ $kb_input->subscribe(
   }
 );
 
+setup;
 help;
 $loop->run;

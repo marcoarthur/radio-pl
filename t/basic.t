@@ -3,8 +3,25 @@ use v5.38;
 use Test2::V0;
 use Encode qw(decode);
 use IPC::Run qw(start pump finish timeout);
+use Mojo::File qw(path);
 
 my $script = './radio.pl';
+my $conf =<<'EOC';
+- station:
+    name: Radio 1
+    url: https://radio1.com
+- station:
+    name: Radio 2
+    url: http://radio2.com
+- station:
+    name: Радио 3
+    url: http://radio3.com
+- station:
+    name: Radio 4
+    url: https://radio4.com
+EOC
+my $conf_file = '/tmp/test.yml';
+
 my $help_expected =<<~'EOS';
 q - to quit
 n - to next station
@@ -13,6 +30,8 @@ h - to help
 l - to list all stations
 
 EOS
+
+path($conf_file)->spew($conf, 'UTF-8');
 
 # on startup we send a help message
 subtest start_radio => sub {
@@ -28,7 +47,7 @@ subtest start_radio => sub {
 
 sub send_radio_cmd($cmd, $out) {
   my ($in, $err, $i);
-  my $h = start [ 'perl', $script ], \$in, $out, \$err, 
+  my $h = start [ 'perl', $script, "--conf=$conf_file" ], \$in, $out, \$err, 
                 timeout(3, exception => "slow radio command $cmd");
   do {
     $out = '';
@@ -54,14 +73,15 @@ subtest list_radios => sub {
   send_radio_cmd('l', \$out);
 
   my $list_radios = <<~'EOL';
-  1 - Classic Russian
-  2 - Russian Music
-  3 - Радио старого полковника
-  4 - Radio USP
-  5 - Radio JaH
+  1 - Radio 1
+  2 - Radio 2
+  3 - Радио 3
+  4 - Radio 4
+
   EOL
 
   is decode('UTF8', $out), $help_expected . $list_radios, 'As expected after typing "l"';
 };
 
+unlink $conf_file;
 done_testing;
