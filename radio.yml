@@ -14,3 +14,6 @@
 - station:
     name: Radio JaH
     url: http://solid9.streamupsolutions.com:8018/autodj
+- station:
+    name: Swiss Classic
+    url: https://stream.srg-ssr.ch/m/rsc_de/aacp_96
