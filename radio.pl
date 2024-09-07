@@ -37,6 +37,7 @@ use IO::Async::Process;
 use List::Util qw(first);
 
 binmode STDOUT, ":encoding(UTF-8)";
+STDOUT->autoflush(1);
 my $loop = IO::Async::Loop->new;
 RxPerl::IOAsync::set_loop($loop);
 
@@ -44,6 +45,9 @@ my $script = path($0);
 my $stations;
 my $index = 0;
 my $cmds;
+my $externals = {
+  player => 'mplayer',
+};
 
 # get from yml radio data
 eval {
@@ -57,7 +61,7 @@ die "No stations" if $stations->size == 0;
 
 sub play_radio ($radio) {
   my $url = $radio->{station}{url};
-  my $cmd = ['mplayer', $url];
+  my $cmd = [$externals->{player}, $url];
 
   my $process = IO::Async::Process->new(
     command => $cmd,
@@ -144,31 +148,31 @@ sub list_all {
 }
 
 # all command table
-$cmds = {
-  next => { 
-    pattern => qr/^n$/i, 
-    func => sub { play(next_station) } 
-  },
-  previous => { 
-    pattern => qr/^p$/i,
-    func => sub { play(previous_station) }
-  },
-  help => {
-    pattern =>qr/^h$/i,
-    func => sub { help }
-  },
-  list_all => {
-    pattern => qr/^l$/i,
-    func => sub {list_all}
-  },
-  stop => {
-    pattern => qr/^q$/i,
-    func => sub {stop}
-  },
-};
-
 sub process_user_input($input) {
-  my $cmd = first { $cmds->{$_}{pattern} =~ $input->{text} } keys %$cmds;
+  $cmds = {
+    next => { 
+      pattern => qr/^n$/i, 
+      func => sub { play(next_station) } 
+    },
+    previous => { 
+      pattern => qr/^p$/i,
+      func => sub { play(previous_station) }
+    },
+    help => {
+      pattern =>qr/^h$/i,
+      func => sub { help }
+    },
+    list_all => {
+      pattern => qr/^l$/i,
+      func => sub {list_all}
+    },
+    stop => {
+      pattern => qr/^q$/i,
+      func => sub {stop}
+    },
+  };
+
+  my $cmd = first { $input->{text} =~ $cmds->{$_}{pattern} } keys %$cmds;
   if ( $cmd ) { $cmds->{$cmd}->{func}->(); }
   else {
     warn "Unrecognized command '$input->{text}'\n";
