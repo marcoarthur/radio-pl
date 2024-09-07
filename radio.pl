@@ -1,3 +1,5 @@
+#!/usr/bin/env perl
+
 use Mojo::Base -strict, -signatures;
 
 package Keyboard {
