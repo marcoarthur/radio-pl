@@ -3,7 +3,6 @@ use v5.38;
 use Test2::V0;
 use Encode qw(decode);
 use IPC::Run qw(start pump finish timeout);
-use DDP;
 
 my $script = './radio.pl';
 my $help_expected =<<~'EOS';
@@ -34,7 +33,7 @@ sub send_radio_cmd($cmd, $out) {
     $in = $cmd;
     $h->pump;
     $i++;
-  } until ((length $in == 0 ));
+  } until (length $in == 0);
 
   # just quit radio to get the output
   $in = 'q'; $h->pump; $h->finish;
