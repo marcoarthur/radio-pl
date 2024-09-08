@@ -83,6 +83,7 @@ sub play_radio ($radio) {
     },
     on_exception => sub {
       warn "Failed to play radio $url";
+      $radio->{station}{playing} = 0;
     },
     on_finish => sub {
       say "finished playing $url";
@@ -115,10 +116,14 @@ sub previous_station {
   return $stations->[$index % $stations->size];
 }
 
+sub curr_station {
+  return $stations->first(sub {$_->{station}{playing}});
+}
+
 # manage playing station
 sub play ($radio){
   # check running station and stop the radio first
-  my $on_play = $stations->first( sub { $_->{station}{playing} } );
+  my $on_play = curr_station;
   if ($on_play) {
     $on_play->{station}{process}->kill(15);
     $on_play->{station}{playing} = 0;
@@ -147,7 +152,7 @@ sub help {
 sub list_all {
   my $list = '';
   $stations->each(sub ($x, $idx){ $list .= "$idx - $x->{station}{name}\n" });
-  my $playing = $stations->first(sub{ $_->{station}{playing} });
+  my $playing = curr_station;
   $list .= "current playing: $playing->{station}{name}\n" if $playing;
   say $list;
 }
@@ -178,7 +183,7 @@ sub process_user_input($input) {
   };
 
   my $cmd = first { $input->{text} =~ $cmds->{$_}{pattern} } keys %$cmds;
-  if ( $cmd ) { $cmds->{$cmd}->{func}->(); }
+  if ( $cmd ) { $cmds->{$cmd}{func}->(); }
   else {
     warn "Unrecognized command '$input->{text}'\n";
     warn "Type 'h' for help\n";

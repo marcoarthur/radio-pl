@@ -47,7 +47,7 @@ subtest start_radio => sub {
 
 sub send_radio_cmd($cmd, $out) {
   my ($in, $err, $i);
-  my $h = start [ 'perl', $script, "--conf=$conf_file" ], \$in, $out, \$err, 
+  my $h = start [ 'perl', $script, "--conf=$conf_file", "--player=echo" ], \$in, $out, \$err, 
                 timeout(3, exception => "slow radio command $cmd");
   do {
     $out = '';
@@ -81,6 +81,14 @@ subtest list_radios => sub {
   EOL
 
   is decode('UTF8', $out), $help_expected . $list_radios, 'As expected after typing "l"';
+};
+
+subtest play_radio => sub {
+  my $out;
+  send_radio_cmd("n", \$out);
+  my $out_expected = "outputting... http://radio2.com";
+
+  is $out, $help_expected . $out_expected, "Ok and echo radio";
 };
 
 unlink $conf_file;
